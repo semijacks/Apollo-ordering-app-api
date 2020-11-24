@@ -2,20 +2,32 @@ import { error, success } from "consola";
 import { ApolloServer } from "apollo-server-express";
 import { DB, port, IN_PROD } from "./config";
 import { typeDefs, resolvers } from "./graphql";
+import { schemaDirectives } from "./graphql/directives";
+import AuthMiddleware from "./middlewares/auth";
 import * as AppModels from "./models";
 
 import express from "express";
 import mongoose from "mongoose";
+import bodyParser from "body-parser";
 
 //initialize the express application
 const app = express();
+app.use(AuthMiddleware);
+app.use(bodyParser.json());
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  schemaDirectives,
   playground: IN_PROD,
-  context: {
-    ...AppModels,
+  context: ({ req }) => {
+    let { isAuth, user } = req;
+    return {
+      req,
+      isAuth,
+      user,
+      ...AppModels,
+    };
   },
 });
 
